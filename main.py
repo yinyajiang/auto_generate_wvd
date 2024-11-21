@@ -8,6 +8,8 @@ import glob
 from pywidevine.device import Device, DeviceTypes
 from pathlib import Path
 import shutil
+import hashlib
+
 
 def third_dir():
     return os.path.join(os.path.dirname(__file__), "third")
@@ -19,6 +21,8 @@ def start_frida_server():
     frida_name = "frida-server-16.5.7-android-x86"
     adb_path = avd_util.adb_path()
     subprocess.run([adb_path, "push", frida_name, "/sdcard"], cwd=third_dir()).check_returncode()
+    while not avd_util.adb_file_exists(f"/sdcard/{frida_name}"):
+        time.sleep(1)
     shell_cmds = [
         "su",
         f"mv /sdcard/{frida_name} /data/local/tmp",
@@ -56,7 +60,6 @@ def saveas_wvd(temp_dir, saveas):
     Device.load(saveas)
 
 
-
 def start_dumper():
     # https://github.com/lollolong/dumper
     venv_path = os.path.join(dumper_dir(), "venv")
@@ -79,14 +82,17 @@ def start_dumper():
             temp_dir = os.path.join(dumper_dir(), line[i + len(key):].strip())
             print(f"temp_dir: {temp_dir}")
             return temp_dir
+        raise Exception("Failed to get temp_dir")
 
     def terminate_dumper():
         try:
             process.terminate()
-        except:
+        except Exception as e:
             pass
         finally:
-            shutil.rmtree(os.path.join(dumper_dir(), "key_dumps"))
+            temp_dir = os.path.join(dumper_dir(), "key_dumps")
+            if os.path.exists(temp_dir):
+                shutil.rmtree(temp_dir)
 
     return terminate_dumper, wait_dumper
 
@@ -103,7 +109,6 @@ def main(wvd_save_path):
     finally:
         terminate_dumper()
         avd_util.avd_stop_all()
-        time.sleep(3)
         avd_util.avd_delete(avd_name)
         if os.path.exists(wvd_save_path):
             print(f"wvd file saved at: {wvd_save_path}")
@@ -113,12 +118,30 @@ if __name__ == "__main__":
     if len(sys.argv) < 2:
         print("Usage: python main.py <wvd_save_dir> [count]")
         exit(1)
-    wvd_save_dir = sys.argv[1]
+    wvd_save_dir = os.path.join(sys.argv[1], time.strftime("%Y-%m-%d"))
     count = int(sys.argv[2]) if len(sys.argv) > 2 else 1
+    index = 0
     all_wvd_paths = []
-    for i in range(count):
-        wvd_path = os.path.join(wvd_save_dir, f"awvd_{i}.wvd")
-        main(wvd_path)
-        all_wvd_paths.append(wvd_path)
-        time.sleep(2)
-    print(f"All wvd files saved at: {'\n '.join(all_wvd_paths)}")
+    while index < count:
+        wvd_path = os.path.join(wvd_save_dir, f"awvd_{index+1}.wvd")
+        try:
+            main(wvd_path)
+            all_wvd_paths.append(wvd_path)
+            index += 1
+            print("***********************************************\n")
+            print(f"generate wvd file success, {index}/{count} \n")
+            print("***********************************************\n")
+        except Exception as e:
+            print(e)
+            print(f"generate wvd file failed, retry...")
+    print(f"All wvd files saved at:\n {'\n '.join(all_wvd_paths)}")
+    # check same wvd file
+    files_md5 = {}
+    for p in all_wvd_paths:
+        md5 = hashlib.md5(Path(p).read_bytes()).hexdigest()
+        if md5 in files_md5:
+            raise Exception(f"Found same wvd files")
+        else:
+            files_md5[md5] = p
+
+

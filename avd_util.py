@@ -3,6 +3,7 @@ import subprocess
 import uuid
 import sys
 import shutil
+import time
 
 def sdk_path():
     return os.path.join(os.environ['LOCALAPPDATA'], 'Android', 'Sdk')
@@ -25,6 +26,11 @@ def avd_found(name):
     if name in result.stdout:
         return True
     return False
+
+def adb_file_exists(file_path):
+    cmd = f'adb shell "test -e {file_path} && echo 1 || echo 0"'
+    result = subprocess.getoutput(cmd).strip()
+    return result == '1' 
 
 def avd_list():
     result = subprocess.run([emulator_path(), "-list-avds"], capture_output=True, text=True)
@@ -67,7 +73,18 @@ def avd_start(name):
 
 
 def avd_stop_all():
+    has = avd_list()
     subprocess.run([adb_path(), "emu", "kill"])
+    if has:
+        print("Waiting 30 seconds for AVD to stop...")
+        time.sleep(30)
+        subprocess.run(["taskkill", "/F", "/IM", "qemu-system-x86_64.exe", "/T"])
+        subprocess.run(["taskkill", "/F", "/IM", "emulator", "/T"])
+
+
+def adb_stop():
+    subprocess.run([adb_path(), "kill-server"])
+    subprocess.run(["taskkill", "/F", "/IM", "adb.exe", "/T"])
 
 
 def avd_start_new(k, model):
