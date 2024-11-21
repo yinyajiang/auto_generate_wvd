@@ -1,7 +1,7 @@
 import pyautogui
 import time
 import os
-import avd_util
+
 
 def wait_for_screen(element, max_seconds=100, return_region=False, **kwargs):
     start_time = time.time()

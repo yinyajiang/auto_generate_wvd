@@ -115,6 +115,10 @@ if __name__ == "__main__":
         exit(1)
     wvd_save_dir = sys.argv[1]
     count = int(sys.argv[2]) if len(sys.argv) > 2 else 1
+    all_wvd_paths = []
     for i in range(count):
-        main(os.path.join(wvd_save_dir, f"awvd_{i}.wvd"))
+        wvd_path = os.path.join(wvd_save_dir, f"awvd_{i}.wvd")
+        main(wvd_path)
+        all_wvd_paths.append(wvd_path)
         time.sleep(2)
+    print(f"All wvd files saved at: {'\n '.join(all_wvd_paths)}")
