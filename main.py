@@ -138,7 +138,7 @@ if __name__ == "__main__":
         except Exception as e:
             print(e)
             print(f"generate wvd file failed, retry...")
-    print(f"All wvd files saved at:\n {'\n '.join(all_wvd_paths)}")
+
     # check same wvd file
     files_md5 = {}
     for p in all_wvd_paths:
