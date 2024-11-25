@@ -21,16 +21,30 @@ def adb_path():
     return os.path.join(sdk_path(), 'platform-tools', 'adb.exe')
 
 
+def sdkmanager_path():
+    return os.path.join(sdk_path(), 'cmdline-tools', 'latest', 'bin', 'sdkmanager.bat')
+
+
+def avd_check_image(image_name):
+    # list images
+    result = subprocess.run([sdkmanager_path(), "--list_installed"], capture_output=True, text=True)
+    if image_name in result.stdout:
+        return
+    raise Exception(f"android studio image {image_name} not found")
+
+
 def avd_found(name):
     result = subprocess.run([emulator_path(), "-list-avds"], capture_output=True, text=True)
     if name in result.stdout:
         return True
     return False
 
+
 def adb_file_exists(file_path):
     cmd = f'adb shell "test -e {file_path} && echo 1 || echo 0"'
     result = subprocess.getoutput(cmd).strip()
     return result == '1' 
+
 
 def avd_list():
     result = subprocess.run([emulator_path(), "-list-avds"], capture_output=True, text=True)
@@ -45,10 +59,10 @@ def avd_delete(name):
 
 
 def avd_create(name, k, model):
+    avd_check_image(k)
     subprocess.run([avdmanager_path(), "create", "avd", "-n", name, "-k", k, "-d", model,"--force"]).check_returncode()
     avd_ini_path = os.path.join(r"C:\Android\.android\avd", f"{name}.avd", "config.ini")
     
-    # 逐行读取并修改内容
     modified_lines = []
     with open(avd_ini_path, 'r', encoding='utf-8') as f:
         for line in f:
@@ -56,8 +70,7 @@ def avd_create(name, k, model):
                 modified_lines.append('hw.keyboard=yes\n')
             else:
                 modified_lines.append(line)
-    
-    # 写回修改后的内容
+                
     with open(avd_ini_path, 'w', encoding='utf-8') as f:
         f.writelines(modified_lines)
     
