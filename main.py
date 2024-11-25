@@ -18,7 +18,11 @@ def dumper_dir():
     return os.path.join(third_dir(), "dumper-main")
 
 def start_frida_server():
-    frida_name = "frida-server-16.5.7-android-x86"
+    frida_files = glob.glob(os.path.join(third_dir(), "frida-server*"))
+    if len(frida_files) == 0:
+        raise Exception("No frida-server found")
+
+    frida_name = os.path.basename(frida_files[0])
     adb_path = avd_util.adb_path()
     subprocess.run([adb_path, "push", frida_name, "/sdcard"], cwd=third_dir()).check_returncode()
     while not avd_util.adb_file_exists(f"/sdcard/{frida_name}"):
