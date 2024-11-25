@@ -134,6 +134,7 @@ if __name__ == "__main__":
             index += 1
             print("***********************************************\n")
             print(f"generate wvd file success, {index}/{count} \n")
+            print(f"dir: {wvd_save_dir} \n")
             print("***********************************************\n")
         except Exception as e:
             print(e)
