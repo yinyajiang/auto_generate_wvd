@@ -103,6 +103,7 @@ def start_dumper():
 
 def main(wvd_save_path):
     avd_name = avd_util.avd_start_new("system-images;android-28;google_apis;x86", "pixel_6")
+    terminate_dumper = None
     try:
         automate.wait_avd_fixed()
         start_frida_server()
@@ -111,7 +112,8 @@ def main(wvd_save_path):
         temp_dir = wait_dumper()
         saveas_wvd(temp_dir, wvd_save_path)
     finally:
-        terminate_dumper()
+        if terminate_dumper:
+            terminate_dumper()
         avd_util.avd_stop_all()
         avd_util.avd_delete(avd_name)
         if os.path.exists(wvd_save_path):
