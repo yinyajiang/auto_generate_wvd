@@ -9,7 +9,7 @@ from pywidevine.device import Device, DeviceTypes
 from pathlib import Path
 import shutil
 import hashlib
-
+import zipfile
 
 def third_dir():
     return os.path.join(os.path.dirname(__file__), "third")
@@ -150,5 +150,15 @@ if __name__ == "__main__":
             raise Exception(f"Found same wvd files")
         else:
             files_md5[md5] = p
+    
+    # zip wvd files
+    zip_path = os.path.join(wvd_save_dir, f"wvd.zip")
+    with zipfile.ZipFile(zip_path, "w", compression=zipfile.ZIP_DEFLATED) as zip_file:
+        for p in all_wvd_paths:
+            zip_file.write(p, os.path.basename(p), compress_type=zipfile.ZIP_DEFLATED)
+    # calc md5
+    md5 = hashlib.md5(Path(zip_path).read_bytes()).hexdigest()
+    md5_path = zip_path + ".md5"
+    Path(md5_path).write_bytes((os.path.basename(zip_path) + ":" + md5).encode())
 
 
